@@ -11,6 +11,5 @@
 #define AUDIO_HALF_FRAMES   128
 
 HAL_StatusTypeDef Audio_Start(I2S_HandleTypeDef *hi2s);
-void Audio_SetFrequency(float hz);
 
 #endif /* AUDIO_H */

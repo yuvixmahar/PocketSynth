@@ -21,12 +21,14 @@
 #include "dma.h"
 #include "i2c.h"
 #include "i2s.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "cs43l22.h"
 #include "audio.h"
+#include "controls.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -98,6 +100,8 @@ int main(void)
   MX_DMA_Init();
   MX_I2S3_Init();
   MX_I2C1_Init();
+  MX_TIM3_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   /* 1. Configure the codec over I2C. It stays powered down. */
   if (CS43L22_Init(&hi2c1) != HAL_OK)
@@ -110,6 +114,8 @@ int main(void)
   /* 3. The clock is running, so it is now safe to power the codec on. */
   if (CS43L22_PowerOn() != HAL_OK)
       startup_failed();
+  /* 4. Start reading the encoder and the 1 kHz control tick. */
+  Controls_Start(&htim3, &htim6);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -119,10 +125,12 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	/* Heartbeat: the green LED blinks to show main() is alive.
-	   The sound keeps playing by itself through DMA + interrupts. */
-	HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
-	HAL_Delay(500);
+	  /* Button LEDs: each lights while its button is pressed. */
+	HAL_GPIO_WritePin(LED_GREEN_GPIO_Port,  LED_GREEN_Pin,  !HAL_GPIO_ReadPin(BTN1_GPIO_Port, BTN1_Pin));
+	HAL_GPIO_WritePin(LED_ORANGE_GPIO_Port, LED_ORANGE_Pin, !HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin));
+	HAL_GPIO_WritePin(LED_RED_GPIO_Port,    LED_RED_Pin,    !HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin));
+	HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,   LED_BLUE_Pin,   !HAL_GPIO_ReadPin(BTN4_GPIO_Port, BTN4_Pin));
+	HAL_Delay(1);
   }
   /* USER CODE END 3 */
 }
