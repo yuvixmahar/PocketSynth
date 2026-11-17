@@ -1,11 +1,12 @@
 #include "synth.h"
+#include "echo.h"
 #include <math.h>
 
 #define TABLE_SIZE		1024
 #define TABLE_SHIFT		22			/* 32 bits - 10 bits of table index */
 #define VOICE_GAIN		0.25f		/* 4 voices x 0.25 = 1.0 at most: never clips */
 
-/* Envelope settings. In Phase 3 the pots will set attack and release. */
+/* The pots change attack and release while playing. */
 #define ATTACK_S		0.010f 		/* 10 ms to reach full volume */
 #define DECAY_S			0.150f		/* 150 ms to drop to sustain */
 #define SUSTAIN_LVL		0.7f		/* level while the key is held */
@@ -29,7 +30,8 @@ static Voice	voices[SYNTH_NUM_VOICES];
 static volatile	Waveform waveform = WAVE_SINE;
 
 static float fs;
-static float attack_step, decay_step, release_step;
+static float decay_step;
+static volatile float attack_step, release_step;	/* set by the pots */
 
 void Synth_Init(float sample_rate)
 {
@@ -46,14 +48,15 @@ void Synth_Init(float sample_rate)
 	}
 
 	/* How much the volume changes per sample in each stage */
-	attack_step  = 1.0f / (ATTACK_S * fs);
-	decay_step	 = (1.0f - SUSTAIN_LVL) / (DECAY_S *fs);
-	release_step = 1.0f / (RELEASE_S * fs);
+	decay_step = (1.0f - SUSTAIN_LVL) / (DECAY_S * fs);
+	Synth_SetAttack(ATTACK_S);
+	Synth_SetRelease(RELEASE_S);
+
+	Echo_Init();
 }
 
-void Synth_NoteOn(int voice, float freq_hz)
+void Synth_NoteOn(int voice)
 {
-	voices[voice].phase_inc = (uint32_t)(freq_hz / fs * 4294967296.0f);
 	voices[voice].gate = 1;
 }
 
@@ -62,9 +65,25 @@ void Synth_NoteOff(int voice)
 	voices[voice].gate = 0;
 }
 
+/* The control tick calls this every 1 ms, so bend and vibrato move the pitch live. */
+void Synth_SetFrequency(int voice, float freq_hz)
+{
+	voices[voice].phase_inc = (uint32_t)(freq_hz / fs * 4294967296.0f);
+}
+
 void Synth_SetWaveform(Waveform w)
 {
 	waveform = w;
+}
+
+void Synth_SetAttack(float seconds)
+{
+	attack_step = 1.0f / (seconds * fs);
+}
+
+void Synth_SetRelease(float seconds)
+{
+	release_step = 1.0f / (seconds * fs);
 }
 
 /* Move one voice's envelope forward by one sample and return its volume. */
@@ -124,9 +143,13 @@ void Synth_Render(int16_t *dst, int frames)
             mix += table[v->phase >> TABLE_SHIFT] * env;
             v->phase += v->phase_inc;
         }
+        /* Echo runs even with no keys held, so the repeats can fade out. */
+        float out = Echo_Process(mix * VOICE_GAIN);
+        if (out > 1.0f)  out = 1.0f;          /* dry + echo can pass 1.0: clip it */
+        if (out < -1.0f) out = -1.0f;
 
-        int16_t out = (int16_t)(mix * VOICE_GAIN * 32767.0f);
-        dst[2 * i]     = out;                 /* left  */
-        dst[2 * i + 1] = out;                 /* right */
+        int16_t s = (int16_t)(out * 32767.0f);
+        dst[2 * i]     = s;                   /* left  */
+        dst[2 * i + 1] = s;                   /* right */
     }
 }

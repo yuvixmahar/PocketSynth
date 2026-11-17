@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "dma.h"
 #include "i2c.h"
 #include "i2s.h"
@@ -102,6 +103,7 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM3_Init();
   MX_TIM6_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   /* 1. Configure the codec over I2C. It stays powered down. */
   if (CS43L22_Init(&hi2c1) != HAL_OK)
@@ -115,7 +117,7 @@ int main(void)
   if (CS43L22_PowerOn() != HAL_OK)
       startup_failed();
   /* 4. Start reading the encoder and the 1 kHz control tick. */
-  Controls_Start(&htim3, &htim6);
+  Controls_Start(&htim3, &htim6, &hadc1);
   /* USER CODE END 2 */
 
   /* Infinite loop */

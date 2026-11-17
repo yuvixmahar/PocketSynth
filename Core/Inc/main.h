@@ -123,6 +123,8 @@ void Error_Handler(void);
 #define CODEC_RESET_GPIO_Port GPIOD
 #define OTG_FS_OverCurrent_Pin GPIO_PIN_5
 #define OTG_FS_OverCurrent_GPIO_Port GPIOD
+#define JOY_SW_Pin GPIO_PIN_6
+#define JOY_SW_GPIO_Port GPIOD
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
 #define ENC_A_Pin GPIO_PIN_4

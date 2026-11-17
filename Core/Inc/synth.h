@@ -14,9 +14,12 @@ typedef enum {
 } Waveform;
 
 void Synth_Init(float sample_rate);
-void Synth_NoteOn(int voice, float freq_hz);
+void Synth_NoteOn(int voice);
 void Synth_NoteOff(int voice);
+void Synth_SetFrequency(int voice, float freq_hz);
 void Synth_SetWaveform(Waveform w);
+void Synth_SetAttack(float seconds);
+void Synth_SetRelease(float seconds);
 void Synth_Render(int16_t *dst, int frames);
 
 #endif /* SYNTH_H */
