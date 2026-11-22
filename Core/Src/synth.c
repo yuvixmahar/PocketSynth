@@ -1,5 +1,6 @@
 #include "synth.h"
 #include "echo.h"
+#include "perf.h"
 #include <math.h>
 
 #define TABLE_SIZE		1024
@@ -32,6 +33,8 @@ static volatile	Waveform waveform = WAVE_SINE;
 static float fs;
 static float decay_step;
 static volatile float attack_step, release_step;	/* set by the pots */
+static volatile uint32_t pressed_at[SYNTH_NUM_VOICES];	/* cycle count at NoteOn */
+static volatile uint8_t  waiting[SYNTH_NUM_VOICES];		/* 1 = NoteOn not rendered yet */
 static volatile float peak;							/* loudest output since Synth_TakePeak */
 
 void Synth_Init(float sample_rate)
@@ -58,6 +61,11 @@ void Synth_Init(float sample_rate)
 
 void Synth_NoteOn(int voice)
 {
+	if (!voices[voice].gate)				/* a new press, not a repeat */
+	{
+		pressed_at[voice] = Perf_Now();
+		waiting[voice] = 1;
+	}
 	voices[voice].gate = 1;
 }
 
@@ -130,6 +138,16 @@ void Synth_Render(int16_t *dst, int frames)
 {
     const float *table = tables[waveform];   /* read once per block */
     float block_peak = 0.0f;
+
+    /* Latency: how long each new NoteOn waited for this render to pick it up */
+    for (int n = 0; n < SYNTH_NUM_VOICES; n++)
+    {
+        if (waiting[n])
+        {
+            Perf_Add(&perf_latency, Perf_Now() - pressed_at[n]);
+            waiting[n] = 0;
+        }
+    }
 
     for (int i = 0; i < frames; i++)
     {

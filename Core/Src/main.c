@@ -32,6 +32,7 @@
 #include "controls.h"
 #include "sonar.h"
 #include "ui.h"
+#include "perf.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -111,6 +112,9 @@ int main(void)
   MX_I2C3_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  /* 0. Start the CPU cycle counter used for the timing measurements. */
+  Perf_Init();
+
   /* 1. Configure the codec over I2C. It stays powered down. */
   if (CS43L22_Init(&hi2c1) != HAL_OK)
       startup_failed();
@@ -143,6 +147,7 @@ int main(void)
 	HAL_GPIO_WritePin(LED_RED_GPIO_Port,    LED_RED_Pin,    !HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin));
 	HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,   LED_BLUE_Pin,   !HAL_GPIO_ReadPin(BTN4_GPIO_Port, BTN4_Pin));
 	UI_Update();
+	Perf_Report();
 	HAL_Delay(1);
   }
   /* USER CODE END 3 */

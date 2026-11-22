@@ -2,6 +2,7 @@
 #include "synth.h"
 #include "echo.h"
 #include "sonar.h"
+#include "perf.h"
 #include "main.h"		/* BTN1_Pin, JOY_SW_Pin, ... */
 #include <math.h>
 
@@ -242,11 +243,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM6)              /* our 1 kHz control tick */
     {
+        uint32_t start = Perf_Now();
+        uint32_t audio_before = (uint32_t)perf_audio.total;
         scan_buttons();
         read_encoder();
         read_analog();
         update_theremin();
         update_pitch();
+        /* Don't count time the audio interrupt took from us in the middle */
+        uint32_t audio_time = (uint32_t)perf_audio.total - audio_before;
+        Perf_Add(&perf_tick, Perf_Now() - start - audio_time);
     }
 }
 

@@ -63,7 +63,7 @@ HAL_StatusTypeDef CS43L22_Init(I2C_HandleTypeDef *hi2c)
     err |= write_reg(0x00, 0x00);
 
     /* 8. Start quiet: -20 dB. A full-scale sine at 0 dB is painfully loud. */
-    err |= CS43L22_SetVolume(-20);
+    err |= CS43L22_SetVolume(0);
 
     return err ? HAL_ERROR : HAL_OK;
 }
