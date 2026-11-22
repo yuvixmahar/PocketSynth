@@ -32,6 +32,7 @@ static volatile	Waveform waveform = WAVE_SINE;
 static float fs;
 static float decay_step;
 static volatile float attack_step, release_step;	/* set by the pots */
+static volatile float peak;							/* loudest output since Synth_TakePeak */
 
 void Synth_Init(float sample_rate)
 {
@@ -128,6 +129,7 @@ static float envelope_next(Voice *v)
 void Synth_Render(int16_t *dst, int frames)
 {
     const float *table = tables[waveform];   /* read once per block */
+    float block_peak = 0.0f;
 
     for (int i = 0; i < frames; i++)
     {
@@ -147,9 +149,22 @@ void Synth_Render(int16_t *dst, int frames)
         float out = Echo_Process(mix * VOICE_GAIN);
         if (out > 1.0f)  out = 1.0f;          /* dry + echo can pass 1.0: clip it */
         if (out < -1.0f) out = -1.0f;
+        if (fabsf(out) > block_peak)
+            block_peak = fabsf(out);
 
         int16_t s = (int16_t)(out * 32767.0f);
         dst[2 * i]     = s;                   /* left  */
         dst[2 * i + 1] = s;                   /* right */
     }
+
+    if (block_peak > peak)
+        peak = block_peak;                    /* one write per block, not per sample */
+}
+
+/* For the LED level meter: return the loudest sample since the last call, then start over. */
+float Synth_TakePeak(void)
+{
+    float p = peak;
+    peak = 0.0f;
+    return p;
 }

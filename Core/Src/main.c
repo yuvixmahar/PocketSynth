@@ -30,6 +30,8 @@
 #include "cs43l22.h"
 #include "audio.h"
 #include "controls.h"
+#include "sonar.h"
+#include "ui.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,6 +106,10 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM6_Init();
   MX_ADC1_Init();
+  MX_TIM2_Init();
+  MX_TIM9_Init();
+  MX_I2C3_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   /* 1. Configure the codec over I2C. It stays powered down. */
   if (CS43L22_Init(&hi2c1) != HAL_OK)
@@ -117,7 +123,11 @@ int main(void)
   if (CS43L22_PowerOn() != HAL_OK)
       startup_failed();
   /* 4. Start reading the encoder and the 1 kHz control tick. */
+  Sonar_Start(&htim9, &htim2);
   Controls_Start(&htim3, &htim6, &hadc1);
+
+  /* 5. LCD and LEDs. These are slow, so they only ever run from the main loop. */
+  UI_Start(&hi2c3, &htim1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -132,6 +142,7 @@ int main(void)
 	HAL_GPIO_WritePin(LED_ORANGE_GPIO_Port, LED_ORANGE_Pin, !HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin));
 	HAL_GPIO_WritePin(LED_RED_GPIO_Port,    LED_RED_Pin,    !HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin));
 	HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,   LED_BLUE_Pin,   !HAL_GPIO_ReadPin(BTN4_GPIO_Port, BTN4_Pin));
+	UI_Update();
 	HAL_Delay(1);
   }
   /* USER CODE END 3 */

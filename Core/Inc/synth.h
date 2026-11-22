@@ -21,5 +21,6 @@ void Synth_SetWaveform(Waveform w);
 void Synth_SetAttack(float seconds);
 void Synth_SetRelease(float seconds);
 void Synth_Render(int16_t *dst, int frames);
+float Synth_TakePeak(void);     /* loudest output since the last call, 0..1 */
 
 #endif /* SYNTH_H */
